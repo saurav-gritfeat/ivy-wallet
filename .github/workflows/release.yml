@@ -1,15 +1,11 @@
-name: Release APK
+name: Auto Release APK
 
 on:
   push:
+    branches: [ "main", "master" ]
     tags:
       - 'v*'
   workflow_dispatch:
-    inputs:
-      tag_name:
-        description: 'Release Tag (e.g., v1.0.0)'
-        required: true
-        default: 'v1.0.0'
 
 jobs:
   release:
@@ -34,21 +30,27 @@ jobs:
       - name: Grant Execute Permission to Gradlew
         run: chmod +x gradlew
 
-      - name: Build Debug and Demo APKs
-        run: ./gradlew assembleDebug assembleDemo --stacktrace
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: Prepare Release Assets
         run: |
           mkdir -p release-output
-          cp app/build/outputs/apk/debug/*.apk release-output/ivy-wallet-debug.apk || true
-          cp app/build/outputs/apk/demo/*.apk release-output/ivy-wallet-demo.apk || true
+          cp app/build/outputs/apk/debug/*.apk release-output/ivy-wallet-latest.apk
 
-      - name: Create GitHub Release
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ivy-wallet-latest-apk
+          path: release-output/ivy-wallet-latest.apk
+          retention-days: 14
+
+      - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
-          name: Ivy Wallet ${{ github.event.inputs.tag_name || github.ref_name }}
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}
+          name: ${{ github.ref_type == 'tag' && format('Ivy Wallet {0}', github.ref_name) || 'Ivy Wallet (Latest Build)' }}
           draft: false
-          prerelease: false
-          files: release-output/*.apk
+          prerelease: ${{ github.ref_type != 'tag' }}
+          files: release-output/ivy-wallet-latest.apk
           generate_release_notes: true

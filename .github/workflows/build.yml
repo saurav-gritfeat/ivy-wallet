@@ -1,15 +1,13 @@
-name: Build APK
+name: PR Build Verification
 
 on:
-  push:
-    branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build Debug APK
+    name: Verify Build
     runs-on: ubuntu-latest
 
     steps:
@@ -30,10 +28,3 @@ jobs:
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
-
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: ivy-wallet-debug
-          path: app/build/outputs/apk/debug/*.apk
-          retention-days: 14
