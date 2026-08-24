@@ -36,6 +36,12 @@ import com.ivy.ai.downloader.DownloadProgress
 import com.ivy.ai.downloader.DownloadableModel
 import com.ivy.ai.downloader.ModelDownloadManager
 
+data class AccountItem(
+    val id: UUID,
+    val name: String,
+    val currency: String
+)
+
 data class AiBankParserUiState(
     val inputText: String = "",
     val isAnalyzing: Boolean = false,
@@ -44,7 +50,9 @@ data class AiBankParserUiState(
     val isSuccess: Boolean = false,
     val isSlmLoaded: Boolean = false,
     val loadedModelName: String? = null,
-    val availableModels: List<String> = emptyList()
+    val availableModels: List<String> = emptyList(),
+    val accounts: List<AccountItem> = emptyList(),
+    val selectedAccountId: UUID? = null
 )
 
 @HiltViewModel
@@ -83,6 +91,25 @@ class AiBankParserViewModel @Inject constructor(
 
     init {
         refreshModelStatus()
+        loadAccounts()
+    }
+
+    private fun loadAccounts() {
+        viewModelScope.launch {
+            val accs = accountRepository.findAll().map {
+                AccountItem(id = it.id.value, name = it.name.value, currency = it.asset.code)
+            }
+            _uiState.update {
+                it.copy(
+                    accounts = accs,
+                    selectedAccountId = it.selectedAccountId ?: accs.firstOrNull()?.id
+                )
+            }
+        }
+    }
+
+    fun onAccountSelected(id: UUID) {
+        _uiState.update { it.copy(selectedAccountId = id) }
     }
 
     fun refreshModelStatus() {
@@ -124,10 +151,22 @@ class AiBankParserViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isAnalyzing = true, statusMessage = null) }
             val result = aiEngine.parse(text)
+
+            // Auto-match best account
+            val currentAccounts = _uiState.value.accounts
+            val matchedAccount = currentAccounts.firstOrNull { acc ->
+                val accIdDigits = result.accountIdentifier?.replace(Regex("""[^0-9]"""), "") ?: ""
+                val accNameLower = acc.name.lowercase()
+                (accIdDigits.isNotEmpty() && accNameLower.contains(accIdDigits)) ||
+                    (result.merchant.isNotEmpty() && accNameLower.contains(result.merchant.lowercase())) ||
+                    (result.rawText.contains(acc.name, ignoreCase = true))
+            } ?: currentAccounts.firstOrNull()
+
             _uiState.update {
                 it.copy(
                     isAnalyzing = false,
                     parsedResult = result,
+                    selectedAccountId = matchedAccount?.id ?: it.selectedAccountId,
                     statusMessage = "Transaction details extracted successfully!"
                 )
             }
@@ -153,12 +192,13 @@ class AiBankParserViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                // Find account or fallback to first account
+                // Find account or fallback to selected/first account
                 val accounts = accountRepository.findAll()
-                val targetAccount = accounts.firstOrNull() ?: run {
-                    _uiState.update { it.copy(statusMessage = "Please create an Account in Ivy Wallet first!") }
-                    return@launch
-                }
+                val targetAccount = accounts.firstOrNull { it.id.value == _uiState.value.selectedAccountId }
+                    ?: accounts.firstOrNull() ?: run {
+                        _uiState.update { it.copy(statusMessage = "Please create an Account in Ivy Wallet first!") }
+                        return@launch
+                    }
 
                 // Find category or fallback
                 val categories = categoryRepository.findAll()

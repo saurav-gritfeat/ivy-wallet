@@ -441,9 +441,46 @@ fun AiBankParserScreen() {
                                 }
                             }
 
-                            result.accountIdentifier?.let { acc ->
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text("Detected Source: $acc", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            // Account Selector Dropdown
+                            var accountDropdownExpanded by remember { mutableStateOf(false) }
+                            val selectedAccount = uiState.accounts.firstOrNull { it.id == uiState.selectedAccountId }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text("Assign to Account", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Box {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+                                        .clickable { accountDropdownExpanded = true }
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = selectedAccount?.let { "💳 ${it.name} (${it.currency})" } ?: "Select Account",
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 13.sp
+                                    )
+                                    Text("Change ▾", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                                }
+
+                                androidx.compose.material3.DropdownMenu(
+                                    expanded = accountDropdownExpanded,
+                                    onDismissRequest = { accountDropdownExpanded = false }
+                                ) {
+                                    uiState.accounts.forEach { acc ->
+                                        androidx.compose.material3.DropdownMenuItem(
+                                            text = { Text("💳 ${acc.name} (${acc.currency})", fontSize = 13.sp) },
+                                            onClick = {
+                                                viewModel.onAccountSelected(acc.id)
+                                                accountDropdownExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
                             }
 
                             Spacer(modifier = Modifier.height(14.dp))
