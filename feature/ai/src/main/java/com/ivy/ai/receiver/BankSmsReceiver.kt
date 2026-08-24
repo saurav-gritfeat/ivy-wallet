@@ -12,6 +12,9 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
+import com.ivy.ai.data.BankSenderRuleRepository
+import kotlinx.coroutines.flow.first
+
 @AndroidEntryPoint
 class BankSmsReceiver : BroadcastReceiver() {
 
@@ -21,12 +24,16 @@ class BankSmsReceiver : BroadcastReceiver() {
     @Inject
     lateinit var notificationManager: BankNotificationManager
 
+    @Inject
+    lateinit var senderRuleRepository: BankSenderRuleRepository
+
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
 
         val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
         if (messages.isNullOrEmpty()) return
 
+        val sender = messages.firstOrNull()?.originatingAddress ?: ""
         val fullBody = messages.joinToString(" ") { it.messageBody ?: "" }.trim()
         if (fullBody.isBlank()) return
 
@@ -35,14 +42,32 @@ class BankSmsReceiver : BroadcastReceiver() {
             return
         }
 
-        // 2. Run BankAiEngine in background coroutine
+        // 2. Run BankAiEngine & Sender Rule matching in background coroutine
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                // Check Sender Rules (Blacklist / Whitelist)
+                val rules = senderRuleRepository.getRules().first()
+                val matchedRule = rules.firstOrNull { rule ->
+                    sender.contains(rule.senderPattern, ignoreCase = true) ||
+                        fullBody.contains(rule.senderPattern, ignoreCase = true)
+                }
+
+                // If sender is blacklisted, drop immediately
+                if (matchedRule != null && matchedRule.isBlacklisted) {
+                    Timber.d("Ignoring SMS from blacklisted sender: $sender")
+                    pendingResult.finish()
+                    return@launch
+                }
+
                 val parsed = aiEngine.parse(fullBody)
                 if (parsed.amount > 0.0) {
-                    notificationManager.showDetectedTransactionNotification(parsed)
-                    Timber.d("Detected financial SMS: ${parsed.currency} ${parsed.amount} at ${parsed.merchant}")
+                    val targetAccountId = matchedRule?.mappedAccountId
+                    notificationManager.showDetectedTransactionNotification(
+                        parsed = parsed,
+                        mappedAccountId = targetAccountId
+                    )
+                    Timber.d("Detected financial SMS from '$sender': ${parsed.currency} ${parsed.amount} (Mapped Account: $targetAccountId)")
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error parsing incoming bank SMS")

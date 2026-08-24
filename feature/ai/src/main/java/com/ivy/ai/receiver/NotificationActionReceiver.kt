@@ -61,6 +61,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
             val merchant = intent.getStringExtra(BankNotificationManager.EXTRA_MERCHANT) ?: "Bank Transaction"
             val categoryName = intent.getStringExtra(BankNotificationManager.EXTRA_CATEGORY) ?: "General"
             val rawText = intent.getStringExtra(BankNotificationManager.EXTRA_RAW_TEXT) ?: ""
+            val mappedAccIdStr = intent.getStringExtra(BankNotificationManager.EXTRA_MAPPED_ACCOUNT_ID)
 
             if (amount <= 0.0) {
                 notificationManager.dismissNotification(notifId)
@@ -71,7 +72,12 @@ class NotificationActionReceiver : BroadcastReceiver() {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val accounts = accountRepository.findAll()
-                    val targetAccount = accounts.firstOrNull() ?: run {
+                    val targetAccount = mappedAccIdStr?.let { idStr ->
+                        try {
+                            val uuid = java.util.UUID.fromString(idStr)
+                            accounts.firstOrNull { it.id.value == uuid }
+                        } catch (e: Exception) { null }
+                    } ?: accounts.firstOrNull() ?: run {
                         Timber.w("No account found to assign detected transaction")
                         pendingResult.finish()
                         return@launch

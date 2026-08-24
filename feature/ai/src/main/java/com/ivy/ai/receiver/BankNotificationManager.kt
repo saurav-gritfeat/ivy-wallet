@@ -31,6 +31,7 @@ class BankNotificationManager @Inject constructor(
         const val EXTRA_MERCHANT = "extra_merchant"
         const val EXTRA_CATEGORY = "extra_category"
         const val EXTRA_RAW_TEXT = "extra_raw_text"
+        const val EXTRA_MAPPED_ACCOUNT_ID = "extra_mapped_account_id"
         const val EXTRA_NOTIF_ID = "extra_notif_id"
     }
 
@@ -55,7 +56,10 @@ class BankNotificationManager @Inject constructor(
         }
     }
 
-    fun showDetectedTransactionNotification(parsed: BankParsedTransaction) {
+    fun showDetectedTransactionNotification(
+        parsed: BankParsedTransaction,
+        mappedAccountId: java.util.UUID? = null
+    ) {
         val notifId = Random().nextInt(100000)
 
         // 1. Quick Add Action Intent
@@ -68,6 +72,7 @@ class BankNotificationManager @Inject constructor(
             putExtra(EXTRA_MERCHANT, parsed.merchant)
             putExtra(EXTRA_CATEGORY, parsed.categoryName)
             putExtra(EXTRA_RAW_TEXT, parsed.rawText)
+            putExtra(EXTRA_MAPPED_ACCOUNT_ID, mappedAccountId?.toString())
         }
         val quickAddPendingIntent = PendingIntent.getBroadcast(
             context,

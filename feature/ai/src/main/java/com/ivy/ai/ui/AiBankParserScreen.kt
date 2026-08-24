@@ -631,6 +631,178 @@ fun AiBankParserScreen() {
                 }
             }
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Sender Whitelist / Blacklist & Account Mappings Section
+            val senderRules by viewModel.senderRules.collectAsState()
+            var showAddRuleModal by remember { mutableStateOf(false) }
+            var newSenderPattern by remember { mutableStateOf("") }
+            var newIsBlacklisted by remember { mutableStateOf(false) }
+            var newMappedAccountId by remember { mutableStateOf<java.util.UUID?>(null) }
+            var senderAccountDropdownExpanded by remember { mutableStateOf(false) }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Sender Rules & Account Mappings (${senderRules.size})",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Map SMS sender IDs (e.g., NABIL, CHASE) directly to your accounts or blacklist spam.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = {
+                    newSenderPattern = ""
+                    newIsBlacklisted = false
+                    newMappedAccountId = uiState.accounts.firstOrNull()?.id
+                    showAddRuleModal = true
+                },
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
+            ) {
+                Text("+ Add Sender Rule / Mapping", fontSize = 12.sp)
+            }
+
+            if (showAddRuleModal) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text("Add Sender Rule", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        OutlinedTextField(
+                            value = newSenderPattern,
+                            onValueChange = { newSenderPattern = it },
+                            placeholder = { Text("Sender ID / Keyword (e.g. NABIL, FONEPAY, CHASE)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            androidx.compose.material3.Checkbox(
+                                checked = newIsBlacklisted,
+                                onCheckedChange = { newIsBlacklisted = it }
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("⛔ Blacklist (Ignore and never process this sender)", fontSize = 12.sp)
+                        }
+
+                        if (!newIsBlacklisted) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text("Route to Account:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            val chosenAcc = uiState.accounts.firstOrNull { it.id == newMappedAccountId }
+
+                            Box {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MaterialTheme.colorScheme.surface)
+                                        .clickable { senderAccountDropdownExpanded = true }
+                                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(chosenAcc?.let { "💳 ${it.name} (${it.currency})" } ?: "Select Account", fontSize = 12.sp)
+                                    Text("Change ▾", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                                }
+
+                                androidx.compose.material3.DropdownMenu(
+                                    expanded = senderAccountDropdownExpanded,
+                                    onDismissRequest = { senderAccountDropdownExpanded = false }
+                                ) {
+                                    uiState.accounts.forEach { acc ->
+                                        androidx.compose.material3.DropdownMenuItem(
+                                            text = { Text("💳 ${acc.name} (${acc.currency})", fontSize = 12.sp) },
+                                            onClick = {
+                                                newMappedAccountId = acc.id
+                                                senderAccountDropdownExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                            TextButton(onClick = { showAddRuleModal = false }) { Text("Cancel") }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Button(
+                                onClick = {
+                                    viewModel.saveSenderRule(newSenderPattern, newIsBlacklisted, if (newIsBlacklisted) null else newMappedAccountId)
+                                    showAddRuleModal = false
+                                },
+                                enabled = newSenderPattern.isNotBlank()
+                            ) {
+                                Text("Save Rule")
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            senderRules.forEach { rule ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 3.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (rule.isBlacklisted) Color(0xFFFF3D00).copy(alpha = 0.08f) else Color(0xFF00C853).copy(alpha = 0.08f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(rule.senderPattern, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (rule.isBlacklisted) "⛔ Blacklisted" else "➔ ${rule.mappedAccountName ?: "Default Account"}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (rule.isBlacklisted) Color(0xFFFF3D00) else Color(0xFF00C853)
+                                )
+                            }
+                        }
+                        IconButton(onClick = { viewModel.deleteSenderRule(rule.id) }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
