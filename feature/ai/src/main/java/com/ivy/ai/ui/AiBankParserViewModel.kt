@@ -32,6 +32,10 @@ import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 
+import com.ivy.ai.downloader.DownloadProgress
+import com.ivy.ai.downloader.DownloadableModel
+import com.ivy.ai.downloader.ModelDownloadManager
+
 data class AiBankParserUiState(
     val inputText: String = "",
     val isAnalyzing: Boolean = false,
@@ -49,14 +53,33 @@ class AiBankParserViewModel @Inject constructor(
     private val templateRepository: BankTemplateRepository,
     private val transactionRepository: TransactionRepository,
     private val accountRepository: AccountRepository,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    val downloadManager: ModelDownloadManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AiBankParserUiState())
     val uiState: StateFlow<AiBankParserUiState> = _uiState.asStateFlow()
 
+    val downloadProgress: StateFlow<DownloadProgress> = downloadManager.downloadProgress
+
     val templates: StateFlow<List<BankFewShotTemplate>> = templateRepository.getTemplates()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val modelCatalog: List<DownloadableModel> = downloadManager.availableCatalog
+
+    fun startDownload(model: DownloadableModel) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(statusMessage = "Starting download for ${model.name}...") }
+            val res = downloadManager.downloadModel(model)
+            if (res.isSuccess) {
+                refreshModelStatus()
+                // Auto load newly downloaded model
+                loadModel(model.fileName)
+            } else {
+                _uiState.update { it.copy(statusMessage = "Download failed: ${res.exceptionOrNull()?.message}") }
+            }
+        }
+    }
 
     init {
         refreshModelStatus()

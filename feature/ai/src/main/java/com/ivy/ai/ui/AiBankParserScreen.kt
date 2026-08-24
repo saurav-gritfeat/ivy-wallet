@@ -160,14 +160,15 @@ fun AiBankParserScreen() {
                     if (uiState.availableModels.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Found ${uiState.availableModels.size} model(s) in Download/IvyWallet/models/:",
+                            text = "Installed models in Download/IvyWallet/models/:",
                             fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         uiState.availableModels.forEach { modelName ->
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -181,12 +182,83 @@ fun AiBankParserScreen() {
                                 }
                             }
                         }
-                    } else {
-                        Text(
-                            text = "Persistent Storage: Place Gemma/Qwen .bin or .task model in 'Download/IvyWallet/models/' to persist across app updates and reinstalls.",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "1-Tap Download SLM Models (Direct to persistent storage):",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    // Download Progress Bar
+                    val downloadProgress by viewModel.downloadProgress.collectAsState()
+                    if (downloadProgress.isDownloading) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        androidx.compose.material3.LinearProgressIndicator(
+                            progress = { downloadProgress.progressPercent },
+                            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                            color = Color(0xFF6200EE),
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Downloading model...",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "${(downloadProgress.progressPercent * 100).toInt()}% (${downloadProgress.bytesDownloaded / (1024 * 1024)} MB)",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF6200EE)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+                    viewModel.modelCatalog.forEach { model ->
+                        val isInstalled = uiState.availableModels.any { it.contains(model.fileName, ignoreCase = true) }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(model.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+                                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                                    ) {
+                                        Text(model.sizeText, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                                Text(model.description, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            if (isInstalled) {
+                                Text("✅ Ready", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00C853))
+                            } else {
+                                Button(
+                                    onClick = { viewModel.startDownload(model) },
+                                    enabled = !downloadProgress.isDownloading,
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                ) {
+                                    Text("Download", fontSize = 11.sp)
+                                }
+                            }
+                        }
                     }
                 }
             }
