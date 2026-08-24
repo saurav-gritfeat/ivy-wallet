@@ -2,7 +2,12 @@ package com.ivy.ai.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ivy.ai.data.BankSenderRule
+import com.ivy.ai.data.BankSenderRuleRepository
 import com.ivy.ai.data.BankTemplateRepository
+import com.ivy.ai.downloader.DownloadProgress
+import com.ivy.ai.downloader.DownloadableModel
+import com.ivy.ai.downloader.ModelDownloadManager
 import com.ivy.ai.engine.BankAiEngine
 import com.ivy.ai.model.BankFewShotTemplate
 import com.ivy.ai.model.BankParsedTransaction
@@ -32,10 +37,6 @@ import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 
-import com.ivy.ai.downloader.DownloadProgress
-import com.ivy.ai.downloader.DownloadableModel
-import com.ivy.ai.downloader.ModelDownloadManager
-
 data class AccountItem(
     val id: UUID,
     val name: String,
@@ -59,6 +60,7 @@ data class AiBankParserUiState(
 class AiBankParserViewModel @Inject constructor(
     private val aiEngine: BankAiEngine,
     private val templateRepository: BankTemplateRepository,
+    private val senderRuleRepository: BankSenderRuleRepository,
     private val transactionRepository: TransactionRepository,
     private val accountRepository: AccountRepository,
     private val categoryRepository: CategoryRepository,
@@ -73,7 +75,31 @@ class AiBankParserViewModel @Inject constructor(
     val templates: StateFlow<List<BankFewShotTemplate>> = templateRepository.getTemplates()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val senderRules: StateFlow<List<BankSenderRule>> = senderRuleRepository.getRules()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val modelCatalog: List<DownloadableModel> = downloadManager.availableCatalog
+
+    fun saveSenderRule(senderPattern: String, isBlacklisted: Boolean, mappedAccountId: UUID?) {
+        viewModelScope.launch {
+            val accountName = _uiState.value.accounts.firstOrNull { it.id == mappedAccountId }?.name
+            val rule = BankSenderRule(
+                senderPattern = senderPattern.trim().uppercase(),
+                isBlacklisted = isBlacklisted,
+                mappedAccountId = mappedAccountId,
+                mappedAccountName = accountName
+            )
+            senderRuleRepository.saveRule(rule)
+            _uiState.update { it.copy(statusMessage = "Saved rule for sender '$senderPattern'!") }
+        }
+    }
+
+    fun deleteSenderRule(ruleId: String) {
+        viewModelScope.launch {
+            senderRuleRepository.deleteRule(ruleId)
+            _uiState.update { it.copy(statusMessage = "Removed sender rule") }
+        }
+    }
 
     fun startDownload(model: DownloadableModel) {
         viewModelScope.launch {
