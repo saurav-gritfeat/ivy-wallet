@@ -1,10 +1,22 @@
 # Ivy Wallet (Personal Edition) 💸
 
+[![Download APK](https://img.shields.io/badge/Download-Latest%20APK-brightgreen?style=for-the-badge&logo=android)](https://github.com/saurav-gritfeat/ivy-wallet/releases/latest)
 [![Build APK](https://github.com/saurav-gritfeat/ivy-wallet/actions/workflows/build.yml/badge.svg)](https://github.com/saurav-gritfeat/ivy-wallet/actions/workflows/build.yml)
 [![Release APK](https://github.com/saurav-gritfeat/ivy-wallet/actions/workflows/release.yml/badge.svg)](https://github.com/saurav-gritfeat/ivy-wallet/actions/workflows/release.yml)
+[![Unit Tests](https://github.com/saurav-gritfeat/ivy-wallet/actions/workflows/test.yml/badge.svg)](https://github.com/saurav-gritfeat/ivy-wallet/actions/workflows/test.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 A fast, private, and modern personal finance manager for Android built with **100% Kotlin** and **Jetpack Compose**. Engineered for offline privacy, clean design, and automated continuous delivery via GitHub Actions.
+
+---
+
+## 📥 Download & Install APK
+
+You can download and install the app on your phone directly from GitHub without needing any developer tools:
+
+* 🔗 **[Download Latest APK from Releases](https://github.com/saurav-gritfeat/ivy-wallet/releases/latest)**
+* 📦 **[View All Releases & Assets](https://github.com/saurav-gritfeat/ivy-wallet/releases)**
+* 🛠️ **[Download Continuous Integration Artifacts](https://github.com/saurav-gritfeat/ivy-wallet/actions/workflows/build.yml)** (built on every commit)
 
 ---
 
@@ -59,40 +71,26 @@ graph TD
 | **Database & Persistence** | Room DB (SQLite ORM), AndroidX DataStore |
 | **Networking & Serialization** | Ktor Client, Kotlinx Serialization |
 | **Functional Utilities** | ArrowKt |
+| **Unit Testing** | JUnit4, Kotest Assertions, MockK, Coroutines Test |
 | **Build & CI/CD** | Gradle Kotlin DSL (`build.gradle.kts`), GitHub Actions (Temurin JDK 17) |
 
 ---
 
-## 🚀 Building & Installing
+## 🚀 Cloud Build & Release Guide
 
-### Automated Cloud Builds (No Android Studio Required)
+### 1. Download Development Builds (Every Commit)
+Every push to `main` automatically triggers the **Build APK** workflow. When it finishes:
+1. Go to the **Actions** tab $\rightarrow$ **Build APK**.
+2. Click on the latest run.
+3. Scroll down to **Artifacts** and download `ivy-wallet-debug`.
 
-1. **Continuous Integration Build**:
-   - Push your code to `main` or trigger the **Build APK** workflow from GitHub Actions.
-   - Download the generated `ivy-wallet-debug.apk` directly from workflow artifacts.
-
-2. **Publish a Release**:
-   - Push a tag:
-     ```bash
-     git tag v1.0.0
-     git push origin v1.0.0
-     ```
-   - Or trigger **Release APK** manually from GitHub's **Actions** tab.
-   - Download the APK directly from the repository's **Releases** page on your phone.
-
-### Local Development (Optional)
-
-Requirements:
-- **JDK 17+**
-- **Android SDK (Compile SDK 34, Min SDK 28)**
-
+### 2. Publish an Official Release Tag
+To create a published GitHub Release with the downloadable `.apk` files attached:
 ```bash
-# Build Debug APK
-./gradlew assembleDebug
-
-# Build Optimized Demo APK
-./gradlew assembleDemo
+git tag v1.0.0
+git push origin v1.0.0
 ```
+Or navigate to the **Actions** tab on GitHub $\rightarrow$ select **Release APK** $\rightarrow$ click **Run workflow**.
 
 ---
 
