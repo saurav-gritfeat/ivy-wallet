@@ -120,6 +120,77 @@ fun AiBankParserScreen() {
                 }
             }
 
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // SLM Model Status & Persistent Storage Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (uiState.isSlmLoaded) Color(0xFF6200EE).copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                )
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(if (uiState.isSlmLoaded) Color(0xFF00E676) else Color(0xFFFFB300))
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (uiState.isSlmLoaded) "SLM Active: ${uiState.loadedModelName}" else "MediaPipe SLM: Standby",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = if (uiState.isSlmLoaded) Color(0xFF6200EE) else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        TextButton(onClick = { viewModel.refreshModelStatus() }) {
+                            Text("Scan Storage", fontSize = 12.sp)
+                        }
+                    }
+
+                    if (uiState.availableModels.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Found ${uiState.availableModels.size} model(s) in Download/IvyWallet/models/:",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        uiState.availableModels.forEach { modelName ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(modelName, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                Button(
+                                    onClick = { viewModel.loadModel(modelName) },
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE))
+                                ) {
+                                    Text("Load into Memory", fontSize = 11.sp)
+                                }
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = "Persistent Storage: Place Gemma/Qwen .bin or .task model in 'Download/IvyWallet/models/' to persist across app updates and reinstalls.",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(18.dp))
 
             // Sample Templates Quick Picker

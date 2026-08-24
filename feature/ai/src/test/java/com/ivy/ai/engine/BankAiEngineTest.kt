@@ -21,6 +21,7 @@ class BankAiEngineTest {
 
     private val templateRepository: BankTemplateRepository = mockk()
     private val categoryRepository: CategoryRepository = mockk()
+    private val mediaPipeLlmEngine: MediaPipeLlmEngine = mockk(relaxed = true)
     private lateinit var engine: BankAiEngine
 
     @Before
@@ -34,8 +35,9 @@ class BankAiEngineTest {
         )
         coEvery { categoryRepository.findAll() } returns listOf(dummyCategory)
         every { templateRepository.getTemplates() } returns flowOf(emptyList<BankFewShotTemplate>())
+        every { mediaPipeLlmEngine.isModelLoaded() } returns false
 
-        engine = BankAiEngine(templateRepository, categoryRepository)
+        engine = BankAiEngine(templateRepository, categoryRepository, mediaPipeLlmEngine)
     }
 
     @Test

@@ -23,6 +23,7 @@ dependencies {
     implementation(libs.bundles.room)
     implementation(libs.datastore)
     implementation(libs.timber)
+    implementation(libs.mediapipe.genai)
 
     testImplementation(libs.bundles.testing)
 }

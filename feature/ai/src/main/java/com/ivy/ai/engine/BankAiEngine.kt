@@ -14,7 +14,8 @@ import javax.inject.Singleton
 @Singleton
 class BankAiEngine @Inject constructor(
     private val templateRepository: BankTemplateRepository,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    val mediaPipeLlmEngine: MediaPipeLlmEngine
 ) {
 
     /**
@@ -48,8 +49,8 @@ class BankAiEngine @Inject constructor(
     }
 
     /**
-     * Parses the incoming bank text. First attempts exact pattern/NLP extraction,
-     * matching against few-shot templates and active categories.
+     * Parses the incoming bank text using On-Device MediaPipe SLM if loaded,
+     * or heuristic contextual parsing fallback.
      */
     suspend fun parse(rawMessage: String): BankParsedTransaction {
         val cleanText = rawMessage.trim()
@@ -57,6 +58,19 @@ class BankAiEngine @Inject constructor(
             return BankParsedTransaction(rawText = rawMessage)
         }
 
+        // 1. Try on-device MediaPipe SLM inference if model is active
+        if (mediaPipeLlmEngine.isModelLoaded()) {
+            val prompt = buildPrompt(cleanText)
+            val llmResult = mediaPipeLlmEngine.generate(prompt)
+            if (llmResult.isSuccess) {
+                val parsed = mediaPipeLlmEngine.parseLlmJsonOutput(llmResult.getOrThrow(), rawMessage)
+                if (parsed != null && parsed.amount > 0.0) {
+                    return parsed
+                }
+            }
+        }
+
+        // 2. Fallback heuristic & pattern extraction
         val categories = categoryRepository.findAll().map { it.name.value }
         val templates = templateRepository.getTemplates().first()
 

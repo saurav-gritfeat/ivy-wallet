@@ -37,7 +37,10 @@ data class AiBankParserUiState(
     val isAnalyzing: Boolean = false,
     val parsedResult: BankParsedTransaction? = null,
     val statusMessage: String? = null,
-    val isSuccess: Boolean = false
+    val isSuccess: Boolean = false,
+    val isSlmLoaded: Boolean = false,
+    val loadedModelName: String? = null,
+    val availableModels: List<String> = emptyList()
 )
 
 @HiltViewModel
@@ -54,6 +57,35 @@ class AiBankParserViewModel @Inject constructor(
 
     val templates: StateFlow<List<BankFewShotTemplate>> = templateRepository.getTemplates()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    init {
+        refreshModelStatus()
+    }
+
+    fun refreshModelStatus() {
+        val models = aiEngine.mediaPipeLlmEngine.findAvailableModels().map { it.name }
+        _uiState.update {
+            it.copy(
+                isSlmLoaded = aiEngine.mediaPipeLlmEngine.isModelLoaded(),
+                loadedModelName = aiEngine.mediaPipeLlmEngine.getLoadedModelName(),
+                availableModels = models
+            )
+        }
+    }
+
+    fun loadModel(modelFileName: String) {
+        viewModelScope.launch {
+            val file = java.io.File(aiEngine.mediaPipeLlmEngine.defaultModelDir, modelFileName)
+            _uiState.update { it.copy(statusMessage = "Loading SLM model into GPU/CPU memory...") }
+            val res = aiEngine.mediaPipeLlmEngine.loadModel(file.absolutePath)
+            if (res.isSuccess) {
+                refreshModelStatus()
+                _uiState.update { it.copy(statusMessage = "Loaded model '$modelFileName' successfully!") }
+            } else {
+                _uiState.update { it.copy(statusMessage = "Failed to load model: ${res.exceptionOrNull()?.message}") }
+            }
+        }
+    }
 
     fun onInputTextChanged(newText: String) {
         _uiState.update { it.copy(inputText = newText, statusMessage = null) }
