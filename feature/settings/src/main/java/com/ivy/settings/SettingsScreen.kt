@@ -47,6 +47,7 @@ import com.ivy.legacy.Constants
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.rootScreen
 import com.ivy.legacy.utils.drawColoredShadow
+import com.ivy.navigation.AiBankParserScreen
 import com.ivy.navigation.AttributionsScreen
 import com.ivy.navigation.ContributorsScreen
 import com.ivy.navigation.ExchangeRatesScreen
@@ -235,6 +236,21 @@ private fun BoxWithConstraintsScope.UI(
 
 //            Spacer(Modifier.height(20.dp))
 //            Premium()
+        }
+
+        item {
+            SettingsSectionDivider(text = "AI & Smart Ingestion")
+
+            Spacer(Modifier.height(16.dp))
+
+            val nav = navigation()
+            SettingsPrimaryButton(
+                icon = R.drawable.ic_features,
+                text = "AI Bank Message Lab",
+                backgroundGradient = GradientIvy
+            ) {
+                nav.navigateTo(AiBankParserScreen)
+            }
         }
 
         item {
