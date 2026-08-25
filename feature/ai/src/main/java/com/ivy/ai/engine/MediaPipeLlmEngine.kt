@@ -141,7 +141,7 @@ class MediaPipeLlmEngine @Inject constructor(
             val type = if (typeStr == "INCOME") TransactionType.INCOME else TransactionType.EXPENSE
             val merchant = jsonObject.optString("merchant", "Bank Transaction")
             val category = jsonObject.optString("category", "General")
-            val account = jsonObject.optString("account", null)
+            val account = if (jsonObject.has("account") && !jsonObject.isNull("account")) jsonObject.getString("account") else null
 
             BankParsedTransaction(
                 amount = amount,

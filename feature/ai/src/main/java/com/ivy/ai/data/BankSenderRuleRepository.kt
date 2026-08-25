@@ -95,10 +95,10 @@ class BankSenderRuleRepository @Inject constructor(
                         id = obj.optString("id", UUID.randomUUID().toString()),
                         senderPattern = obj.getString("senderPattern"),
                         isBlacklisted = obj.optBoolean("isBlacklisted", false),
-                        mappedAccountId = obj.optString("mappedAccountId", null)?.let {
-                            try { UUID.fromString(it) } catch (e: Exception) { null }
-                        },
-                        mappedAccountName = obj.optString("mappedAccountName", null)
+                        mappedAccountId = if (obj.has("mappedAccountId") && !obj.isNull("mappedAccountId")) {
+                            try { UUID.fromString(obj.getString("mappedAccountId")) } catch (e: Exception) { null }
+                        } else null,
+                        mappedAccountName = if (obj.has("mappedAccountName") && !obj.isNull("mappedAccountName")) obj.getString("mappedAccountName") else null
                     )
                 )
             }
