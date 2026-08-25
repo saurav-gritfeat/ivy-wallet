@@ -12,7 +12,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import java.util.UUID
@@ -41,7 +41,7 @@ class BankAiEngineTest {
     }
 
     @Test
-    fun `parses standard debit expense message accurately`() = runBlocking {
+    fun `parses standard debit expense message accurately`() = runTest {
         val message = "Your A/C *1234 debited by NPR 450.00 on 2026-08-20 for payment to HIMALAYAN JAVA COFFEE via Fonepay."
         val result = engine.parse(message)
 
@@ -53,7 +53,7 @@ class BankAiEngineTest {
     }
 
     @Test
-    fun `parses salary credit income message accurately`() = runBlocking {
+    fun `parses salary credit income message accurately`() = runTest {
         val message = "Your Account *9901 has been CREDITED by NPR 85,000.00 for SALARY AUGUST from ACME CORP."
         val result = engine.parse(message)
 
@@ -64,7 +64,7 @@ class BankAiEngineTest {
     }
 
     @Test
-    fun `parses US card alert accurately`() = runBlocking {
+    fun `parses US card alert accurately`() = runTest {
         val message = "Chase Alert: Your card ending in 4921 was charged $38.75 at UBER EATS on Aug 24."
         val result = engine.parse(message)
 
