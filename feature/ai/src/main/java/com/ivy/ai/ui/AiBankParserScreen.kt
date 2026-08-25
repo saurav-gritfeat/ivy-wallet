@@ -60,6 +60,8 @@ import androidx.compose.ui.unit.sp
 import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
 import com.ivy.ui.component.BackButton
+import com.ivy.base.model.TransactionType
+import com.ivy.ai.model.BankFewShotTemplate
 
 @Composable
 fun AiBankParserScreen() {

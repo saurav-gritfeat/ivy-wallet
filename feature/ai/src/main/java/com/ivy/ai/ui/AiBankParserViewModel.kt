@@ -151,7 +151,7 @@ class AiBankParserViewModel @Inject constructor(
 
     fun loadModel(modelFileName: String) {
         viewModelScope.launch {
-            val file = java.io.File(aiEngine.mediaPipeLlmEngine.defaultModelDir, modelFileName)
+            val file = java.io.File(aiEngine.mediaPipeLlmEngine.persistentDownloadsDir, modelFileName)
             _uiState.update { it.copy(statusMessage = "Loading SLM model into GPU/CPU memory...") }
             val res = aiEngine.mediaPipeLlmEngine.loadModel(file.absolutePath)
             if (res.isSuccess) {
