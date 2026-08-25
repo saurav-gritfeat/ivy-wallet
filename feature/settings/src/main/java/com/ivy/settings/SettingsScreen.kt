@@ -245,7 +245,7 @@ private fun BoxWithConstraintsScope.UI(
 
             val nav = navigation()
             SettingsPrimaryButton(
-                icon = R.drawable.ic_features,
+                icon = R.drawable.ic_custom_atom_m,
                 text = "AI Bank Message Lab",
                 backgroundGradient = GradientIvy
             ) {

@@ -29,7 +29,7 @@ class BankAiEngineTest {
         val dummyCategory = com.ivy.data.model.Category(
             id = CategoryId(UUID.randomUUID()),
             name = NotBlankTrimmedString.unsafe("Food & Drinks"),
-            color = ColorInt.unsafe(0),
+            color = ColorInt(0),
             icon = null,
             orderNum = 0.0
         )
