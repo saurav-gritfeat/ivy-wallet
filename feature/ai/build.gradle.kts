@@ -16,10 +16,6 @@ dependencies {
     implementation(projects.temp.legacyCode)
     implementation(projects.temp.oldDesign)
 
-    implementation(libs.bundles.kotlin)
-    implementation(libs.bundles.compose)
-    implementation(libs.bundles.hilt)
-    ksp(libs.hilt.compiler)
     implementation(libs.bundles.room)
     implementation(libs.datastore)
     implementation(libs.timber)

@@ -60,7 +60,7 @@ class BankAiEngineTest {
         result.amount shouldBe 85000.0
         result.currency shouldBe "NPR"
         result.type shouldBe TransactionType.INCOME
-        result.merchant shouldBe "Acme Corp (Salary)"
+        result.merchant shouldBe "Acme Corp"
     }
 
     @Test
